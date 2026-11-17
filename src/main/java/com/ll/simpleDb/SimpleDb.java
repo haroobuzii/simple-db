@@ -12,7 +12,9 @@ public class SimpleDb {
     private final String password;
     private boolean devMode = false;
 
-    private Connection connection;
+    // 스레드마다 자기 커넥션을 따로 갖는다
+    // 커넥션 하나를 여러 스레드가 같이 쓰면, 한 스레드의 close()·트랜잭션이 다른 스레드에 영향을 준다
+    private final ThreadLocal<Connection> connectionHolder = new ThreadLocal<>();
 
     public SimpleDb(String host, String username, String password, String dbName) {
         this.url = "jdbc:mysql://%s:3306/%s".formatted(host, dbName);
@@ -45,8 +47,19 @@ public class SimpleDb {
         throw new UnsupportedOperationException("아직 구현 전");
     }
 
+    // 지금 스레드의 커넥션만 닫는다. 다음에 SQL 을 실행하면 새 커넥션이 열린다
     public void close() {
-        throw new UnsupportedOperationException("아직 구현 전");
+        Connection connection = connectionHolder.get();
+
+        if (connection == null) return;
+
+        try {
+            connection.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            connectionHolder.remove();
+        }
     }
 
     // ---------- Sql 이 사용하는 실행 메서드 (같은 패키지에서만 사용) ----------
@@ -114,9 +127,13 @@ public class SimpleDb {
         return stmt;
     }
 
+    // 지금 스레드의 커넥션. 없거나 닫혔으면 새로 연다
     private Connection getConnection() throws SQLException {
+        Connection connection = connectionHolder.get();
+
         if (connection == null || connection.isClosed()) {
             connection = DriverManager.getConnection(url, username, password);
+            connectionHolder.set(connection);
         }
 
         return connection;
