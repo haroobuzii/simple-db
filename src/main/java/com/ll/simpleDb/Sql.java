@@ -56,12 +56,18 @@ public class Sql {
         return rows.isEmpty() ? null : rows.getFirst();
     }
 
+    // 각 행(Map)을 cls 객체로 바꿔서 돌려준다. 예) selectRows(Article.class)
     public <T> List<T> selectRows(Class<T> cls) {
-        throw new UnsupportedOperationException("아직 구현 전");
+        return selectRows()
+                .stream()
+                .map(row -> RowMapper.map(row, cls))
+                .toList();
     }
 
     public <T> T selectRow(Class<T> cls) {
-        throw new UnsupportedOperationException("아직 구현 전");
+        Map<String, Object> row = selectRow();
+
+        return row == null ? null : RowMapper.map(row, cls);
     }
 
     // ---------- 값 하나만 꺼내기: 첫 번째 행의 첫 번째 컬럼 ----------
