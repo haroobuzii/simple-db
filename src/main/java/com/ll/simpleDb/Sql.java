@@ -3,6 +3,7 @@ package com.ll.simpleDb;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -24,8 +25,12 @@ public class Sql {
         return this;
     }
 
+    // IN (?) 처럼 ? 하나에 여러 값을 넣고 싶을 때. ? 를 값 개수만큼 "?, ?, ?" 로 펼친 뒤 append 한다
+    // 예) appendIn("WHERE id IN (?)", 1, 2, 3) → "WHERE id IN (?, ?, ?)" + 파라미터 1, 2, 3
     public Sql appendIn(String sqlPart, Object... params) {
-        throw new UnsupportedOperationException("아직 구현 전");
+        String placeholders = String.join(", ", Collections.nCopies(params.length, "?"));
+
+        return append(sqlPart.replace("?", placeholders), params);
     }
 
     public long insert() {
@@ -73,8 +78,12 @@ public class Sql {
         return toLong(selectValue());
     }
 
+    // 모든 행의 첫 번째 컬럼을 Long 목록으로 (행 순서 그대로)
     public List<Long> selectLongs() {
-        throw new UnsupportedOperationException("아직 구현 전");
+        return selectRows()
+                .stream()
+                .map(row -> toLong(row.values().iterator().next()))
+                .toList();
     }
 
     public String selectString() {
