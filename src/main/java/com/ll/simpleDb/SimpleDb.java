@@ -35,16 +35,36 @@ public class SimpleDb {
         return new Sql(this);
     }
 
+    // 트랜잭션 시작: 자동 커밋을 끈다 → 이후 SQL 은 commit() 전까지 확정되지 않는다
     public void startTransaction() {
-        throw new UnsupportedOperationException("아직 구현 전");
+        try {
+            getConnection().setAutoCommit(false);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
+    // 트랜잭션 동안 실행한 SQL 을 확정하고, 다시 자동 커밋으로 돌아간다
     public void commit() {
-        throw new UnsupportedOperationException("아직 구현 전");
+        endTransaction(true);
     }
 
+    // 트랜잭션 동안 실행한 SQL 을 모두 취소하고, 다시 자동 커밋으로 돌아간다
     public void rollback() {
-        throw new UnsupportedOperationException("아직 구현 전");
+        endTransaction(false);
+    }
+
+    private void endTransaction(boolean commit) {
+        try {
+            Connection connection = getConnection();
+
+            if (commit) connection.commit();
+            else connection.rollback();
+
+            connection.setAutoCommit(true);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     // 지금 스레드의 커넥션만 닫는다. 다음에 SQL 을 실행하면 새 커넥션이 열린다
