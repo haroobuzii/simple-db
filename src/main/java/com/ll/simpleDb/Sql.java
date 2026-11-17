@@ -59,12 +59,18 @@ public class Sql {
         throw new UnsupportedOperationException("아직 구현 전");
     }
 
+    // ---------- 값 하나만 꺼내기: 첫 번째 행의 첫 번째 컬럼 ----------
+
     public LocalDateTime selectDatetime() {
-        throw new UnsupportedOperationException("아직 구현 전");
+        Object value = selectValue();
+
+        if (value instanceof java.sql.Timestamp timestamp) return timestamp.toLocalDateTime();
+
+        return (LocalDateTime) value;
     }
 
     public Long selectLong() {
-        throw new UnsupportedOperationException("아직 구현 전");
+        return toLong(selectValue());
     }
 
     public List<Long> selectLongs() {
@@ -72,11 +78,34 @@ public class Sql {
     }
 
     public String selectString() {
-        throw new UnsupportedOperationException("아직 구현 전");
+        Object value = selectValue();
+
+        return value == null ? null : value.toString();
     }
 
+    // BIT(1) 컬럼은 Boolean 으로, "SELECT 1 = 1" 같은 비교식은 숫자(1/0)로 온다 → 둘 다 처리
     public Boolean selectBoolean() {
-        throw new UnsupportedOperationException("아직 구현 전");
+        Object value = selectValue();
+
+        if (value == null) return null;
+        if (value instanceof Boolean bool) return bool;
+        if (value instanceof Number number) return number.longValue() != 0;
+
+        return Boolean.parseBoolean(value.toString());
+    }
+
+    private Object selectValue() {
+        Map<String, Object> row = selectRow();
+
+        if (row == null) return null;
+
+        return row.values().iterator().next();
+    }
+
+    private static Long toLong(Object value) {
+        if (value == null) return null;
+
+        return ((Number) value).longValue(); // Integer·Long·BigInteger 등 숫자 타입을 모두 long 으로
     }
 
     private String getSql() {
