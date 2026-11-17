@@ -1,7 +1,10 @@
 package com.ll.simpleDb;
 
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class SimpleDb {
     private final String url;
@@ -65,6 +68,31 @@ public class SimpleDb {
     int executeUpdate(String sql, List<Object> params) {
         try (PreparedStatement stmt = prepare(sql, params, Statement.NO_GENERATED_KEYS)) {
             return stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    // SELECT 실행 후, 각 행을 {컬럼이름: 값} Map 으로 바꿔 목록으로 돌려준다
+    // 값의 타입은 MySQL 드라이버가 정해 준다: DATETIME → LocalDateTime, BIT(1) → Boolean, INT UNSIGNED → Long ...
+    List<Map<String, Object>> executeSelect(String sql, List<Object> params) {
+        try (PreparedStatement stmt = prepare(sql, params, Statement.NO_GENERATED_KEYS);
+             ResultSet rs = stmt.executeQuery()) {
+            ResultSetMetaData meta = rs.getMetaData();
+            int columnCount = meta.getColumnCount();
+            List<Map<String, Object>> rows = new ArrayList<>();
+
+            while (rs.next()) {
+                Map<String, Object> row = new LinkedHashMap<>(); // 컬럼 순서 유지
+
+                for (int i = 1; i <= columnCount; i++) {
+                    row.put(meta.getColumnLabel(i), rs.getObject(i));
+                }
+
+                rows.add(row);
+            }
+
+            return rows;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

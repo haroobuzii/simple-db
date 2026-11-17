@@ -41,11 +41,14 @@ public class Sql {
     }
 
     public List<Map<String, Object>> selectRows() {
-        throw new UnsupportedOperationException("아직 구현 전");
+        return simpleDb.executeSelect(getSql(), params);
     }
 
+    // 첫 번째 행만. 결과가 없으면 null
     public Map<String, Object> selectRow() {
-        throw new UnsupportedOperationException("아직 구현 전");
+        List<Map<String, Object>> rows = selectRows();
+
+        return rows.isEmpty() ? null : rows.getFirst();
     }
 
     public <T> List<T> selectRows(Class<T> cls) {
